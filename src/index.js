@@ -6,6 +6,12 @@ import find from 'lodash/fp/find';
 import prop from 'lodash/fp/prop';
 import flow from 'lodash/fp/flow';
 import isEqual from 'lodash/fp/isEqual';
+import stringify from 'json-stable-stringify';
+
+const stringifyOptions = {
+  space: 2,
+  cmp: (a, b) => a.key > b.key,
+};
 
 class SimpleReactIntlWebpackPlugin {
   constructor({
@@ -56,7 +62,7 @@ class SimpleReactIntlWebpackPlugin {
             )(translations), defaultMessages);
             writeFileSync(
               join(this.outputPath, `${language}-messages.js`),
-              `export default ${JSON.stringify(messages, null, 2)}`
+              `export default ${stringify(messages, { space: 2 })}`
             );
           });
           this.cachedDefaultMessages = defaultMessages;
