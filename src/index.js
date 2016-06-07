@@ -4,6 +4,7 @@ import mapValues from 'lodash/fp/mapValues';
 import find from 'lodash/fp/find';
 import prop from 'lodash/fp/prop';
 import flow from 'lodash/fp/flow';
+import isEqual from 'lodash/fp/isEqual';
 
 class SimpleReactIntlWebpackPlugin {
   constructor({
@@ -16,6 +17,7 @@ class SimpleReactIntlWebpackPlugin {
     this.regExp = new RegExp(`${methodName || 'defineMessages'}\\(((.|\\n)*?)\\)`);
     this.languages = languages;
     this.defaultLanguage = defaultLanguage;
+    this.cachedMessages = null;
   }
 
   apply(compiler) {
@@ -27,16 +29,19 @@ class SimpleReactIntlWebpackPlugin {
       const messagesMatches = this.regExp.exec(source);
       if (messagesMatches && messagesMatches.length > 1) {
         const messagesObject = eval(`(${messagesMatches[1].replace(/\n/g, '')})`);
-        this.languages.forEach(language => {
-          const messages = mapValues(value => flow(
-            find(translation => translation[this.defaultLanguage] === value),
-            prop(language)
-          )(translations), messagesObject);
-          writeFileSync(
-            join(this.localesPath, `${language}-messages.json`),
-            JSON.stringify(messages, null, 2)
-          );
-        });
+        if (!isEqual(messagesObject, this.cachedMessages)) {
+          this.languages.forEach(language => {
+            const messages = mapValues(value => flow(
+              find(translation => translation[this.defaultLanguage] === value),
+              prop(language)
+            )(translations), messagesObject);
+            writeFileSync(
+              join(this.localesPath, `${language}-messages.json`),
+              JSON.stringify(messages, null, 2)
+            );
+          });
+          this.cachedMessages = messagesObject;
+        }
       }
       callback();
     });
